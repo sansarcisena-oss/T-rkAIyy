@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b14">
+<title>TürkAI Next</title>
+<style>
+:root{color-scheme:dark;--bg:#090b14;--panel:#111827;--line:#273148;--text:#f4f6ff;--muted:#9ba8c1;--accent:#8b75ff;--blue:#559cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,Arial,sans-serif}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:900px;margin:auto;min-height:100vh;display:flex;flex-direction:column;padding:14px}
+header{display:flex;align-items:center;gap:12px;padding:12px 0 18px;border-bottom:1px solid var(--line)}
+.logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--blue));font-size:23px;font-weight:900}
+.brand{flex:1}
+h1{font-size:19px;margin:0}
+.sub{font-size:12px;color:var(--muted);margin-top:3px}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;background:#eab65e;border-radius:50%}
+.dot.ok{background:#53d69a}.dot.bad{background:#ff7180}
+.settings{display:flex;gap:8px;flex-wrap:wrap;padding:14px 0}
+input,select,textarea{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px;outline:none;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+#model{flex:1;min-width:170px}
+.urlbox{display:flex;flex:2;min-width:220px;gap:6px}
+#server{width:100%}
+button{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:#171e30;color:var(--text)}
+button:hover{border-color:var(--accent)}
+.primary{background:linear-gradient(135deg,#8067ed,#467ee8);border:0;font-weight:700}
+main{flex:1;padding:18px 0}
+#welcome{text-align:center;padding:55px 8px}
+.spark{font-size:42px;color:#ad9bff}
+#welcome h2{font-size:clamp(25px,6vw,38px);margin:8px 0}
+#welcome p{color:var(--muted);line-height:1.7}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
+.suggestions button{font-size:13px}
+#messages{display:flex;flex-direction:column;gap:22px}
+.msg{display:flex;align-items:flex-start;gap:11px}
+.avatar{width:34px;height:34px;flex-shrink:0;border-radius:11px;background:#202943;display:grid;place-items:center;font-weight:800}
+.msg.ai .avatar{background:linear-gradient(135deg,#8067ed,#467ee8)}
+.body{flex:1;min-width:0}
+.name{font-size:12px;color:var(--muted);margin:2px 0 7px}
+.text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75}
+.text.error{color:#ff8993}
+.composer{position:sticky;bottom:0;padding:10px 0 4px;background:linear-gradient(transparent,var(--bg) 15%)}
+.composer-inner{padding:12px;border:1px solid #343d56;border-radius:17px;background:#111725}
+textarea{width:100%;resize:vertical;min-height:65px;max-height:180px;border:0;background:transparent;padding:7px}
+textarea:focus{border:0}
+.actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hint{font-size:11px;color:var(--muted)}
+footer{text-align:center;padding:16px 0 5px;font-size:11px;color:#77839c}
+@media(max-width:520px){.app{padding:10px}.status{max-width:115px;text-align:right}.urlbox{flex-basis:100%;order:3}.settings{gap:7px}#welcome{padding:38px 4px}.hint{max-width:180px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">T</div>
+  <div class="brand">
+    <h1>TürkAI Next</h1>
+    <div class="sub">Yeni nesil yapay zekâ platformu</div>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="status">Bağlantı bekleniyor</span></div>
+</header>
+
+<section class="settings">
+  <select id="model" aria-label="Yapay zekâ modeli">
+    <option value="deepseek">DeepSeek V4.1 Flash</option>
+    <option value="diffusiongemma">Google DiffusionGemma</option>
+  </select>
+  <div class="urlbox">
+    <input id="server" type="url" placeholder="https://turkai-next.onrender.com" aria-label="Render sunucu adresi">
+    <button id="connect">Bağlan</button>
+  </div>
+  <button id="clear">Yeni sohbet</button>
+</section>
+
+<main>
+  <section id="welcome">
+    <div class="spark">✦</div>
+    <h2>Bugün ne <span style="color:#a99aff">öğreniyoruz?</span></h2>
+    <p>Soru sor, kod yaz, fikir geliştir veya yeni bir şey keşfet.</p>
+    <div class="suggestions">
+      <button data-prompt="Bana yaratıcı bir uygulama fikri öner.">💡 Fikir üret</button>
+      <button data-prompt="Bana JavaScript'i basit bir örnekle öğret.">⌨️ Kod öğren</button>
+      <button data-prompt="Yapay zekâ nasıl çalışır?">✦ Yapay zekâyı öğren</button>
+    </div>
+  </section>
+  <section id="messages"></section>
+</main>
+
+<section class="composer">
+  <div class="composer-inner">
+    <textarea id="prompt" maxlength="20000" placeholder="TürkAI Next'e mesaj yaz..." aria-label="Mesaj"></textarea>
+    <div class="actions">
+      <span class="hint">Enter: gönder · Shift + Enter: yeni satır</span>
+      <button class="primary" id="send">Gönder ↑</button>
+    </div>
+  </div>
+</section>
+<footer>TürkAI Next · Güvenli sunucu bağlantısı</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var el=function(id){return document.getElementById(id);};
+var server=el("server");
+var model=el("model");
+var prompt=el("prompt");
+var messages=el("messages");
+var welcome=el("welcome");
+var send=el("send");
+var busy=false;
+var history=[];
+
+function setStatus(text,type){
+  el("status").textContent=text;
+  el("dot").className="dot"+(type?" "+type:"");
+}
+
+function base(){
+  return server.value.trim().replace(/\/+$/,"");
+}
+
+function addMessage(role,text,error){
+  welcome.style.display="none";
+  var row=document.createElement("div");
+  row.className="msg "+(role==="assistant"?"ai":"");
+  var avatar=document.createElement("div");
+  avatar.className="avatar";
+  avatar.textContent=role==="user"?"S":"T";
+  var body=document.createElement("div");
+  body.className="body";
+  var name=document.createElement("div");
+  name.className="name";
+  name.textContent=role==="user"?"Sen":"TürkAI Next";
+  var content=document.createElement("div");
+  content.className="text"+(error?" error":"");
+  content.textContent=text;
+  body.appendChild(name);
+  body.appendChild(content);
+  row.appendChild(avatar);
+  row.appendChild(body);
+  messages.appendChild(row);
+  row.scrollIntoView({behavior:"smooth",block:"end"});
+  return content;
+}
+
+async function connect(){
+  if(!base()){
+    setStatus("Sunucu adresini gir","bad");
+    return;
+  }
+  setStatus("Bağlanıyor...");
+  try{
+    var r=await fetch(base()+"/health");
+    if(!r.ok)throw Error("HTTP "+r.status);
+    var d=await r.json();
+    if(d.apiConfigured){
+      setStatus("Sunucu bağlı","ok");
+    }else{
+      setStatus("API anahtarı eksik","bad");
+    }
+  }catch(e){
+    setStatus("Bağlantı başarısız","bad");
+  }
+}
+
+async function ask(text){
+  if(busy)return;
+  text=(text||prompt.value).trim();
+  if(!text)return;
+  if(!base()){
+    setStatus("Önce sunucu adresini gir","bad");
+    return;
+  }
+
+  busy=true;
+  send.disabled=true;
+  prompt.value="";
+  addMessage("user",text);
+  var answer=addMessage("assistant","Yanıt hazırlanıyor...");
+
+  try{
+    var r=await fetch(base()+"/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:model.value,
+        message:text,
+        history:history.slice(-20)
+      })
+    });
+    var d=await r.json();
+    if(!r.ok)throw Error(d.error||"Sunucu hatası: "+r.status);
+    if(typeof d.reply!=="string")throw Error("Sunucudan geçerli yanıt gelmedi.");
+
+    answer.textContent=d.reply;
+    history.push({role:"user",content:text});
+    history.push({role:"assistant",content:d.reply});
+    history=history.slice(-20);
+    setStatus("Yanıt alındı","ok");
+  }catch(e){
+    answer.className="text error";
+    answer.textContent="Bağlantı hatası: "+e.message+
+      "\n\nRender adresini, sunucu durumunu ve API ayarlarını kontrol et.";
+    setStatus("İstek başarısız","bad");
+  }finally{
+    busy=false;
+    send.disabled=false;
+    prompt.focus();
+  }
+}
+
+el("connect").addEventListener("click",connect);
+send.addEventListener("click",function(){ask(prompt.value);});
+prompt.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    ask(prompt.value);
+  }
+});
+el("clear").addEventListener("click",function(){
+  if(busy)return;
+  history=[];
+  messages.replaceChildren();
+  welcome.style.display="";
+  setStatus("Yeni sohbet hazır");
+});
+document.querySelectorAll("[data-prompt]").forEach(function(button){
+  button.addEventListener("click",function(){
+    ask(button.getAttribute("data-prompt"));
+  });
+});
+
+setStatus("Render adresini bekliyor");
+})();
+</script>
+</body>
+</html>
